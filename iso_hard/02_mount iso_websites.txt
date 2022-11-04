@@ -1,0 +1,3 @@
+http://sethc23.github.io/wiki/1_POSTS/2016-03-10-modifying-linux-filesystem-and-live-cd-via-chroot/
+https://medium.com/@hulkcodexl16/building-your-own-customized-liveiso-from-scratch-197cb947738a
+https://chrisapproved.com/blog/raspberry-pi-hardening.html
