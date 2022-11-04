@@ -1,0 +1,65 @@
+# download ubuntu iso
+
+The iso version should be lower/equal than/to the host version.
+
+# install uck (ubuntu customization kit)
+
+run:
+	sudo apt-get install uck
+
+# setup chroot environment from iso
+
+run:
+	export BASEDIR=/path/to/chroot/directory
+
+	sudo uck-remaster-unpack-iso /path/to/the/image.iso "$BASEDIR" && sudo uck-remaster-unpack-rootfs "$BASEDIR" && sudo uck-remaster-unpack-initrd "$BASEDIR"
+
+# enter chroot environment
+
+run:
+	sudo uck-remaster-chroot-rootfs /path/to/chroot/directory/
+
+# run GUI app inside chroot environment
+
+before enter chroot environment, run:
+
+	xhost +
+
+inside chroot environment, run:
+
+	export DISPLAY=:0
+
+# access a directory from chroot environment
+
+run:
+	mount --bind /path/to/host/directory /path/to/directory/inside/chroot
+
+ex:
+	mount --bind ~/work/docs ~/work/devenv/doanything/remaster-root/root/docs
+
+after exit chroot environment, should run:
+
+	umount /path/to/directory/inside/chroot
+
+# write files from outside chroot environment
+
+run:
+	sudo chmod g+w -R /path/to/chroot/directory/remaster-root/
+	sudo chmod g+w -R /path/to/chroot/directory/remaster-root-home/
+
+# replace app host with a faster one
+
+inside chroot environment, edit:
+	/etc/apt/sources.list
+
+replace the current host with the host get from:
+	https://launchpad.net/ubuntu/+mirror/free.nchc.org.tw-archive
+
+the complete host list can get from:
+	https://launchpad.net/ubuntu/+archivemirrors
+
+# references
+
+https://help.ubuntu.com/community/DebootstrapChroot
+http://www.thegeekstuff.com/2010/06/xhost-cannot-open-display/
+https://help.ubuntu.com/community/FilePermissions
