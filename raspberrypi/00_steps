@@ -1,0 +1,266 @@
+    
+    
+    //check if root
+    //Change the password for user pi.
+    passwd
+    //Create new user.
+    read -p 'Username: ' uservar
+    sudo adduser <uservar>
+    
+    //switch to user
+    su uservar
+    
+    //??check privliges
+    sudo visudo
+    
+    //disable pi account
+    sudo usermod --lock --expiredate 1 pi
+    
+    //    [optional] Disable wireless interfaces on boot
+    cat <<EOF >>/boot/config.txt
+    # Disable wireless services
+dtoverlay=pi3-disable-wifi
+dtoverlay=pi3-disable-bt
+EOF
+
+
+//reboot
+sudo reboot
+
+  //[optional] Configure SMTP client.w
+//    system alert email setup
+    sudo apt install unattended-upgrades apt-listchanges apticron
+  
+  Copy 50unattended-upgrades from the git respository into 
+  wget https://gitlab.com/cgoff/raspberry-pi-hardening/blob/master/unattended-upgrades-config/50unattended-upgrades  /etc/apt/apt.conf.d/  
+    
+  //configure backup  
+  sudo lsblk  //list char devices
+  
+  //image remote pi and backup to host via ssh
+  ssh -t username@hostname sudo dd bs=4M if=/dev/mmcblk0 | pv | gzip > rpi.img.gz
+  
+  
+  //backkup sd caard to iso file then zip it
+  sudo dd bs=4M if=/dev/mmcblk0 | gzip > rpi.img.gz
+  
+  //restore backup
+  gunzip --stdout rpi.img.gz | sudo dd bs=4M of=/dev/mmcblk0
+    
+    
+/*ssh configuration
+
+    Remove ability for root user to login.
+    Enable authentication via certificate.
+    Set connectivity only from known systems.
+
+Create ssh-users group: 
+*/
+sudo groupadd ssh-users
+sudo usermod -a -G ssh-users $USER
+
+
+/*    Enable authentication via certificate.
+ On the host system(s) where you will be connecting to the RPi system from via SSH you will need to 
+ generate a private and public keypair, and then add the public key of the host system to the RPi system: 
+ */  
+ssh-keygen -t ed25519 -a 777
+ssh-copy-id -i <pub key> <username>@<rpi hostname>
+
+//edit daemonized config
+cat<<EOF >> /etc/ssh/sshd_config
+PermitRootLogin no
+PubkeyAuthentication yes
+PasswordAuthentication no
+UsePAM no
+X11Forwarding no
+AllowGroups ssh-users
+EOF
+
+//restart ssh system deamon
+sudo systemctl restart ssh
+
+/*Firewall configuration
+
+    Whitelisting.
+    Enable SSH connectivity.
+    Enable HTTP/S connectivity.
+    Enable ufw.
+*/Install ufw and pre-configure for SSH and web services:
+sudo apt install ufw
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw limit ssh
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw logging on
+sudo ufw enable
+
+//check ufw setup
+sudo ufw status numbered
+
+/*[optional] fail2ban configuration
+This will allow us to automatically react to obvious attempts to brute-force or exploit vulnerabilities on your system.
+ */
+ sudo apt install fail2ban
+ 
+ //idk what this does exacally.. backup?
+ sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+ 
+ cat <<EOF >> /etc/fail2ban/jail.local
+ [ssd]
+enabled = true
+
+[nginx-botsearch]
+enabled = true
+port = http,https
+filter = nginx-botsearch
+logpath = %(nginx_error_log)s
+bantime = 30d
+
+[nginx-noscript]
+enabled = true
+port = http,https
+filter = nginx-noscript
+logpath = %(nginx_access_log)s
+maxretry = 1
+bantime = 30d
+
+[nginx-badbots]
+enabled = true
+port = http,https
+filter = nginx-badbots
+logpath = %(nginx_access_log)s
+maxretry = 1
+bantime = 30d
+EOF
+
+//restart service
+sudo service fail2ban restart
+
+//ban useer running scripts on ngix serveer
+cat <<EOF >> /etc/fail2ban/filter.d/nginx-noscript.conf
+[Definition]
+failregex = ^<HOST> -*.GET.*(\.php|\.asp|\.aspx|\.exe|\.pl|\.py|\.rb|\.cgi|\.scgi)
+ignoreregex =
+EOF
+
+// Copy apache-badbots.conf to nginx-badbots.conf: 
+ sudo cp /etc/fail2ban/filter.d/apache-badbots.conf /etc/fail2ban/filter.d/nginx-badbots.conf
+ 
+ //RESTART
+ sudo service fail2ban restart
+ 
+ /*[optional] psad configuration
+The Port Scan Attack Detector (PSAD) is a tool that will help detect port scans on your system, and automatically create blocks with ufw. 
+   /*
+   sudo apt install psad
+   //edit config
+   cat <<EOF >> /etc/psad/psad.conf
+   EMAIL_ADDRESSES your email address(s)
+HOSTNAME    your server's hostname
+ENABLE_AUTO_IDS ENABLE_AUTO_IDS Y;
+ENABLE_AUTO_IDS_EMAILS  ENABLE_AUTO_IDS_EMAILS Y;
+EXPECT_TCP_OPTIONS  EXPECT_TCP_OPTIONS Y;
+EOF
+ 
+ //We'll need to add chains to the firewall:  
+ // Add the following lines before the COMMIT line a the bottom: 
+cat <<EOF >> /etc/ufw/before.rules
+    # for PSAD
+-A INPUT -j LOG --log-tcp-options
+-A FORWARD -j LOG --log-tcp-options
+EOF
+    //same for ufc rule also
+cat <<EOF >> /etc/ufw/before6.rules
+    # for PSAD
+-A INPUT -j LOG --log-tcp-options
+-A FORWARD -j LOG --log-tcp-options
+EOF
+
+ //Finally update the signatures, reload, and start: 
+sudo ufw reload
+sudo psad -R
+sudo psad --sig-update
+sudo psad -H
+
+/*nginx Web Server
+nginx is a popular lightweight web server application that works very well with limited resources. We're going to install nginx and harden the configuration. Note that this will be a restrictive configuration specific to serving static web pages. If you need to add more functionality such as PHP, this guide does not include the additional configuration necessary to implement.
+
+Install nginx: 
+*/
+sudo apt install nginx
+/*In order to make changes to the default html root, you'll need to change the ownership of the 
+/var/www/html directory to both your user and the www-data group: 
+*/
+sudo chown -R "$USER":www-data /var/www/html
+
+/*You should now be able to manage files and directories in the html root as you please. This isn't required, but we can add some 
+rate-limiting functionality to help prevent small-scale DoS attacks: 
+*/
+cat <<EOF >>/etc/nginx/nginx.conf
+# Add to the html{} section:
+http {
+limit_req_zone $binary_remote_addr zone=global:10m rate=20r/m;
+limit_conn_zone $binary_remote_addr zone=addr:10m;
+}
+EOF
+
+cat <<EOF >> /etc/nginx/sites-enabled/default
+# Add to the server{} section:
+server {
+  location {
+    limit_req zone=global burst=10 nodelay;
+    limit_conn addr 1;
+    limit_rate 100k;
+    limit_req_status 429;
+  }
+}
+EOF
+
+/*Finally, let's disable the www-data user from making outbound connections. If this account is compromised, it could potentially be used to make outbound connectivity. Note that you have essentially two firewalls, one each 
+for IPv4 and IPv6 protocols. ufw makes changes to both automatically, but when manually entering iptables commands both iptables and ip6tables must be configured. 
+*/
+
+sudo iptables -A OUTPUT -o ethX -m owner --uid-owner www-data -j REJECT
+# Add to the IPv6 firewall; only required if utilizing IPv6
+sudo ip6tables -A OUTPUT -o ethX -m owner --uid-owner www-data -j REJECT
+# Reload the firewall config to apply
+sudo ufw reload
+
+/*Letsencrypt Certificate
+Install certbot for nginx, and configure automatic renewal of certificates. 
+sudo apt-get install certbot python-certbot-nginx
+sudo certbot --nginx
+
+cat <<EOF >> /etc/letsencrypt/options-ssl-nginx.conf
+
+# Add the following to options-ssl-nginx.conf
+ssl_session_timeout 10m;
+ssl_session_tickets off;
+ssl_stapling on;
+ssl_stapling_verify on;
+ssl_trusted_certificate /etc/letsencrypt/live/<domain>/fullchain.pem;
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers EECDH+AESGCM:EDH+AESGCM;
+EOF
+
+//restart server
+sudo systemctl restart nginx
+
+//Configure logwatch
+//logwatch is a handy tool we will configure to send daily system summary messages to your e-mail. 
+sudo apt install logwatch
+sudo vim /usr/share/logwatch/dist.conf
+
+//Add the following to dist.conf, assuming you have previously configured msmtp: 
+mailer = "/usr/bin/msmtp user@domain"
+TmpDir = /tmp
+MailFrom = noreply@domain
+Range = yesterday
+Detail = high
+Format = html
+
+//test config
+sudo /etc/cron.daily/00logwatch
