@@ -1,0 +1,30 @@
+Table of Contents
+
+    Preamble
+    Things you'll need
+    Configuration files and scripts
+    Network Security
+    Initial Configuration
+        Change the password for user pi
+        Create new user
+        Disable pi account
+        [optional] Disable wireless interfaces
+        [optional] Configure SMTP client
+        Configure automatic security updates
+        Configure backups
+    Application Hardening
+        ssh configuration
+        Firewall configuration
+        [optional] fail2ban configuration
+        [optional] psad configuration
+        nginx web server configuration
+        LetsEncrypt certificate configuration
+    Security Monitoring
+        Wazuh agent configuration
+        Configure logwatch
+        SHODAN network monitoring
+        Qualys Community Edition
+        Server uptime monitoring
+    Additional Recommendations
+        Log to RAM to save SD card writes
+        Install Anti-Malware

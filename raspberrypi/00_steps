@@ -17,7 +17,7 @@
     sudo usermod --lock --expiredate 1 pi
     
     //    [optional] Disable wireless interfaces on boot
-    cat <<EOF >>/boot/config.txt
+    cat <<EOF >> /boot/config.txt
     # Disable wireless services
 dtoverlay=pi3-disable-wifi
 dtoverlay=pi3-disable-bt
@@ -35,7 +35,7 @@ sudo reboot
   wget https://gitlab.com/cgoff/raspberry-pi-hardening/blob/master/unattended-upgrades-config/50unattended-upgrades  /etc/apt/apt.conf.d/  
     
   //configure backup  
-  sudo lsblk  //list char devices
+  sudo lsblk  //list block devices
   
   //image remote pi and backup to host via ssh
   ssh -t username@hostname sudo dd bs=4M if=/dev/mmcblk0 | pv | gzip > rpi.img.gz
@@ -68,7 +68,7 @@ ssh-keygen -t ed25519 -a 777
 ssh-copy-id -i <pub key> <username>@<rpi hostname>
 
 //edit daemonized config
-cat<<EOF >> /etc/ssh/sshd_config
+cat <<EOF>> /etc/ssh/sshd_config
 PermitRootLogin no
 PubkeyAuthentication yes
 PasswordAuthentication no
@@ -264,3 +264,6 @@ Format = html
 
 //test config
 sudo /etc/cron.daily/00logwatch
+
+//config usb guard
+https://usbguard.github.io/

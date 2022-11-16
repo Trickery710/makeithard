@@ -1,0 +1,5 @@
+Log to RAM to save SD card writes
+
+Typical inexpensive SD cards have a limited number of writes available. The solution to this is to prolong the life by writing to memory and periodically writing the data back to disk.
+
+In order to do this with minimal configuration, there is an excellent little tool called zram-config which makes the whole process painless. Installation and documentation can be found on at this git repository: https://github.com/ecdye/zram-config. 

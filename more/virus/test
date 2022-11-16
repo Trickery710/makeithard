@@ -1,0 +1,3 @@
+Monitor for vulnerabilities with Qualys Community Edition
+
+Qualys offers a free Community Edition of their vulnerability scanner which can be used on up to 3 external assets. Handy for learning how their product works, and keeping your RPi services updated and properly configured. 

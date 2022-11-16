@@ -1,4 +1,6 @@
-. Before and during the installation
+#! 
+
+ Before and during the installation
 
     3.1. Choose a BIOS password
     3.2. Partitioning the system
