@@ -63,3 +63,24 @@ the complete host list can get from:
 https://help.ubuntu.com/community/DebootstrapChroot
 http://www.thegeekstuff.com/2010/06/xhost-cannot-open-display/
 https://help.ubuntu.com/community/FilePermissions
+
+run:
+	sudo chmod g+w -R /path/to/chroot/directory/remaster-root/
+	sudo chmod g+w -R /path/to/chroot/directory/remaster-root-home/
+
+# replace app host with a faster one
+
+inside chroot environment, edit:
+	/etc/apt/sources.list
+
+replace the current host with the host get from:
+	https://launchpad.net/ubuntu/+mirror/free.nchc.org.tw-archive
+
+the complete host list can get from:
+	https://launchpad.net/ubuntu/+archivemirrors
+
+# references
+
+https://help.ubuntu.com/community/DebootstrapChroot
+http://www.thegeekstuff.com/2010/06/xhost-cannot-open-display/
+https://help.ubuntu.com/community/FilePermissions
