@@ -1,0 +1,11 @@
+
+
+DD command
+to fully erace disk
+dd if=/dev/zero of=(drive location)
+
+if is from location
+/dev/zero writes zeros or is sink for data
+of = location to write to
+
+
